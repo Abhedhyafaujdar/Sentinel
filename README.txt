@@ -16,9 +16,10 @@ with a confidence score and plain-English explanation.
 ## Setup (do this once)
 
 ### 1. Install Python libraries
-Open your terminal / command prompt and run:
+Open a terminal in the project folder and run this in the same Python
+environment you will use to start the backend:
 
-    pip install librosa scikit-learn numpy flask flask-cors joblib soundfile
+    python -m pip install -r requirements.txt
 
 ---
 

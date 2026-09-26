@@ -1,6 +1,6 @@
 """Best-effort image, video-frame, and English text screening."""
 
-from functools import lru_cache
+import gc
 import os
 from pathlib import Path
 import subprocess
@@ -9,16 +9,29 @@ import tempfile
 
 IMAGE_MODEL = "Organika/sdxl-detector"
 TEXT_MODEL = "Hello-SimpleAI/chatgpt-detector-roberta"
+_loaded_classifier_key = None
+_loaded_classifier = None
 
 
-@lru_cache(maxsize=1)
+def _get_classifier(task, model_name):
+    global _loaded_classifier_key, _loaded_classifier
+
+    key = (task, model_name)
+    if key != _loaded_classifier_key:
+        _loaded_classifier = None
+        _loaded_classifier_key = None
+        gc.collect()
+        _loaded_classifier = _load_classifier(task, model_name)
+        _loaded_classifier_key = key
+    return _loaded_classifier
+
+
 def _image_classifier():
-    return _load_classifier("image-classification", IMAGE_MODEL)
+    return _get_classifier("image-classification", IMAGE_MODEL)
 
 
-@lru_cache(maxsize=1)
 def _text_classifier():
-    return _load_classifier("text-classification", TEXT_MODEL)
+    return _get_classifier("text-classification", TEXT_MODEL)
 
 
 def _load_classifier(task, model_name):
