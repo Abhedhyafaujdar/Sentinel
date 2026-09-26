@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SentinelVoice — AI Fake Call Detector</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:       #080c14;
+    --surface:  #0d1220;
+    --card:     #111827;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.12);
+    --accent:   #4f8ef7;
+    --accent2:  #7c5ff7;
+    --danger:   #ef4444;
+    --safe:     #22c55e;
+    --warn:     #f59e0b;
+    --text:     #f1f5f9;
+    --muted:    #64748b;
+    --subtle:   #1e293b;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 60px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -.3px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .nav-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    letter-spacing: .5px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    max-width: 560px;
+    margin-bottom: 44px;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid rgba(79,142,247,.3);
+    background: rgba(79,142,247,.08);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, #fff 40%, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── STATS ROW ── */
+  .stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 36px;
+    width: 100%;
+    max-width: 640px;
+  }
+  .stat {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── MAIN CARD ── */
+  .main-card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--safe);
+    animation: pulse 2s infinite;
+  }
+  .card-body { padding: 24px; }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    position: relative;
+    border: 2px dashed var(--border2);
+    border-radius: 14px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--surface);
+    margin-bottom: 16px;
+  }
+  .upload-zone:hover, .upload-zone.over {
+    border-color: var(--accent);
+    background: rgba(79,142,247,.05);
+  }
+  .upload-zone input {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+  }
+  .upload-icon-wrap {
+    width: 52px; height: 52px;
+    margin: 0 auto 14px;
+    background: rgba(79,142,247,.1);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+  .upload-zone p  { font-size: 12px; color: var(--muted); }
+  .file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    background: rgba(79,142,247,.15);
+    border: 1px solid rgba(79,142,247,.3);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── DIVIDER ── */
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; color: var(--muted); font-size: 12px;
+  }
+  .or-divider::before, .or-divider::after {
+    content:''; flex:1; height:1px; background: var(--border);
+  }
+
+  /* ── RECORD CONTROLS ── */
+  .record-row {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 20px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-red { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: #f87171; }
+  .btn-red:hover { background: rgba(239,68,68,.25); }
+  .rec-badge {
+    display: none; align-items: center; gap: 6px;
+    font-size: 12px; color: #f87171;
+  }
+  .rec-badge.show { display: flex; }
+  .rec-dot { width:7px;height:7px;border-radius:50%;background:#f87171;animation:pulse 1s infinite; }
+  .timer { font-variant-numeric: tabular-nums; }
+
+  /* ── ANALYZE BUTTON ── */
+  .btn-analyze {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-analyze:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+  .btn-analyze:disabled {
+    opacity: .35; cursor: not-allowed; transform: none;
+  }
+
+  /* ── LOADING ── */
+  .loading-bar {
+    display: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+  .loading-bar.show { display: block; }
+  .loading-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    animation: load 1.8s ease-in-out infinite;
+  }
+  @keyframes load {
+    0%{width:0;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0;margin-left:100%}
+  }
+  .loading-text {
+    display: none;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    animation: fadein .3s ease;
+  }
+  .loading-text.show { display: block; }
+  @keyframes fadein { from{opacity:0} to{opacity:1} }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    width: 100%; max-width: 640px;
+    border-radius: 20px;
+    overflow: hidden;
+    display: none;
+    animation: slidein .4s ease;
+    margin-bottom: 20px;
+  }
+  @keyframes slidein { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .result-card.show { display: block; }
+
+  .result-header {
+    padding: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .result-card.fake .result-header { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.25); border-radius: 20px 20px 0 0; }
+  .result-card.real .result-header { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.25); border-radius: 20px 20px 0 0; }
+
+  .verdict-left { display: flex; align-items: center; gap: 14px; }
+  .verdict-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .result-card.fake .verdict-icon { background: rgba(239,68,68,.2); }
+  .result-card.real .verdict-icon { background: rgba(34,197,94,.2); }
+  .verdict-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .5px; }
+  .verdict-text { font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
+  .result-card.fake .verdict-text { color: #f87171; }
+  .result-card.real .verdict-text { color: #4ade80; }
+
+  .risk-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .risk-HIGH   { background: rgba(239,68,68,.2);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+  .risk-MEDIUM { background: rgba(245,158,11,.2); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+  .risk-LOW    { background: rgba(34,197,94,.2);  color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
+
+  .result-body {
+    padding: 20px 24px 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 20px 20px;
+  }
+
+  /* Confidence bars */
+  .conf-row { margin-bottom: 14px; }
+  .conf-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted); margin-bottom: 6px;
+  }
+  .conf-val { font-weight: 600; color: var(--text); }
+  .bar-track {
+    height: 8px; background: var(--subtle);
+    border-radius: 4px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .bar-fake { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .bar-real { background: linear-gradient(90deg, #16a34a, #22c55e); }
+
+  /* Reason box */
+  .reason-box {
+    margin-top: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .reason-title {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+  }
+  .reason-text { font-size: 13px; color: #cbd5e1; line-height: 1.65; }
+
+  /* Metrics strip */
+  .metrics {
+    display: flex; gap: 10px; margin-top: 14px;
+  }
+  .metric {
+    flex: 1; background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; text-align: center;
+  }
+  .metric-val { font-size: 16px; font-weight: 700; color: var(--text); }
+  .metric-label { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; }
+
+  /* ── WARNING BANNER ── */
+  .banner {
+    width: 100%; max-width: 640px;
+    background: rgba(245,158,11,.08);
+    border: 1px solid rgba(245,158,11,.2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12px; color: #fbbf24;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .banner code {
+    background: rgba(245,158,11,.15);
+    padding: 1px 6px; border-radius: 4px; font-size: 11px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    color: var(--muted); font-size: 11px;
+    text-align: center; margin-top: 20px; line-height: 1.8;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--subtle); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    SentinelVoice
+  </div>
+  <div class="nav-pill">CYBERSECURITY · AI DETECTION</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">
+    <div class="pulse-dot"></div>
+    Live Protection Active
+  </div>
+  <h1>Detect AI Fake Voices in Real Time</h1>
+  <p>Upload or record any audio. Our AI analyzes 193 voice features including spectral flatness, pitch jitter, and mel-band artifacts to identify AI-generated voices.</p>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val">193</div>
+    <div class="stat-label">Voice Features Analyzed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">&lt;2s</div>
+    <div class="stat-label">Detection Speed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">6+</div>
+    <div class="stat-label">Indian Languages</div>
+  </div>
+</div>
+
+<!-- WARNING -->
+<div class="banner">
+  Ensure <code>step3_app.py</code> is running on localhost:5000 before analyzing
+</div>
+
+<!-- MAIN CARD -->
+<div class="main-card">
+  <div class="card-header">
+    <span class="card-title">Audio Input</span>
+    <div class="status-dot"></div>
+  </div>
+  <div class="card-body">
+
+    <!-- Upload -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="audioFile" accept="audio/*" onchange="handleFile(this)">
+      <div class="upload-icon-wrap">🎵</div>
+      <h3>Drop audio file here</h3>
+      <p>Supports WAV · MP3 · OGG · FLAC</p>
+      <div class="file-chip" id="fileChip" style="display:none">
+        <span>📎</span><span id="fileName"></span>
+      </div>
+    </div>
+
+    <!-- Analyze -->
+    <button class="btn-analyze" id="analyzeBtn" onclick="analyze()" disabled>
+      Analyze Audio
+    </button>
+    <div class="loading-bar" id="loadBar"><div class="loading-fill"></div></div>
+    <div class="loading-text" id="loadText">Extracting 193 voice features...</div>
+
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="result-card" id="resultCard">
+  <div class="result-header">
+    <div class="verdict-left">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-label">Detection Result</div>
+        <div class="verdict-text" id="verdictText"></div>
+      </div>
+    </div>
+    <div class="risk-badge" id="riskBadge"></div>
+  </div>
+  <div class="result-body">
+    <div class="conf-row">
+      <div class="conf-label">
+        <span>AI / Fake probability</span>
+        <span class="conf-val" id="fakeVal">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill bar-fake" id="fakeBar" style="width:0%"></div></div>
+    </div>
+    <div class="conf-row">
+      <div class="conf-label">
+        <span>Human / Real probability</span>
+        <span class="conf-val" id="realVal">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill bar-real" id="realBar" style="width:0%"></div></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-val" id="mConf">—</div>
+        <div class="metric-label">Confidence</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" id="mRisk">—</div>
+        <div class="metric-label">Risk Level</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" id="mVerdict">—</div>
+        <div class="metric-label">Verdict</div>
+      </div>
+    </div>
+
+    <div class="reason-box">
+      <div class="reason-title">Why this verdict?</div>
+      <div class="reason-text" id="reasonText"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  SentinelVoice · Built for Brewing Codes 4.0 Hackathon 2026 · MUIT Noida<br>
+  Track: Cybersecurity, Digital Privacy &amp; Trust
+</footer>
+
+<script>
+  let selectedFile = null;
+  let mediaRecorder = null;
+  let recChunks = [];
+  let timerInterval = null;
+  let recSeconds = 0;
+
+  // ── Drag & drop ──
+  const zone = document.getElementById("uploadZone");
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault(); zone.classList.remove("over");
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  function handleFile(input) {
+    if (input.files[0]) setFile(input.files[0]);
+  }
+
+  function setFile(f) {
+    selectedFile = f;
+    document.getElementById("fileName").textContent = f.name;
+    document.getElementById("fileChip").style.display = "inline-flex";
+    document.getElementById("analyzeBtn").disabled = false;
+  }
+
+  // ── Recording with in-browser WAV conversion ──
+  async function startRecord() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recChunks = [];
+      recSeconds = 0;
+
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        clearInterval(timerInterval);
+        document.getElementById("recBtn").style.display = "inline-flex";
+        document.getElementById("stopBtn").style.display = "none";
+        document.getElementById("recBadge").classList.remove("show");
+        document.getElementById("fileName").textContent = "Converting...";
+        document.getElementById("fileChip").style.display = "inline-flex";
+
+        try {
+          const webmBlob = new Blob(recChunks, { type: "audio/webm" });
+          const arrayBuf = await webmBlob.arrayBuffer();
+          const audioCtx = new AudioContext({ sampleRate: 16000 });
+          const decoded  = await audioCtx.decodeAudioData(arrayBuf);
+          const wavBlob  = audioBufferToWav(decoded);
+          const wavFile  = new File([wavBlob], "recording.wav", { type: "audio/wav" });
+          audioCtx.close();
+          setFile(wavFile);
+        } catch (e) {
+          console.warn("WAV conversion failed, sending webm:", e);
+          const f = new File(recChunks, "recording.webm", { type: "audio/webm" });
+          setFile(f);
+        }
+      };
+
+      mediaRecorder.start(100);
+      document.getElementById("recBtn").style.display = "none";
+      document.getElementById("stopBtn").style.display = "inline-flex";
+      document.getElementById("recBadge").classList.add("show");
+
+      timerInterval = setInterval(() => {
+        recSeconds++;
+        const m = Math.floor(recSeconds / 60);
+        const s = recSeconds % 60;
+        document.getElementById("timer").textContent = `${m}:${s.toString().padStart(2,"0")}`;
+      }, 1000);
+
+    } catch (err) {
+      alert("Microphone access denied.\nPlease allow microphone in your browser settings.");
+    }
+  }
+
+  function stopRecord() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  }
+
+  // Pure JS: AudioBuffer -> WAV Blob (no libraries needed)
+  function audioBufferToWav(buffer) {
+    const numCh = buffer.numberOfChannels;
+    const sr    = buffer.sampleRate;
+    const len   = buffer.length * numCh * 2;
+    const ab    = new ArrayBuffer(44 + len);
+    const v     = new DataView(ab);
+    const ws    = (o, s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+    ws(0,"RIFF"); v.setUint32(4,36+len,true); ws(8,"WAVE"); ws(12,"fmt ");
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,numCh,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*numCh*2,true);
+    v.setUint16(32,numCh*2,true); v.setUint16(34,16,true);
+    ws(36,"data"); v.setUint32(40,len,true);
+    let offset = 44;
+    for (let i=0; i<buffer.length; i++) {
+      for (let ch=0; ch<numCh; ch++) {
+        const s = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+        v.setInt16(offset, s < 0 ? s*0x8000 : s*0x7FFF, true);
+        offset += 2;
+      }
+    }
+    return new Blob([ab], { type: "audio/wav" });
+  }
+
+  // ── Analyze ──
+  async function analyze() {
+    if (!selectedFile) return;
+
+    document.getElementById("resultCard").classList.remove("show","fake","real");
+    document.getElementById("analyzeBtn").disabled = true;
+    document.getElementById("loadBar").classList.add("show");
+    document.getElementById("loadText").classList.add("show");
+
+    const msgs = [
+      "Extracting 193 voice features...",
+      "Analyzing spectral flatness...",
+      "Checking pitch jitter patterns...",
+      "Running gradient boost model...",
+      "Generating verdict..."
+    ];
+    let mi = 0;
+    const msgInterval = setInterval(() => {
+      mi = (mi + 1) % msgs.length;
+      document.getElementById("loadText").textContent = msgs[mi];
+    }, 900);
+
+    const form = new FormData();
+    form.append("audio", selectedFile);
+
+    try {
+      const res  = await fetch("http://localhost:5000/predict", { method:"POST", body:form });
+      const data = await res.json();
+
+      clearInterval(msgInterval);
+      document.getElementById("loadBar").classList.remove("show");
+      document.getElementById("loadText").classList.remove("show");
+
+      if (data.error) {
+        alert("Error: " + data.error);
+        document.getElementById("analyzeBtn").disabled = false;
+        return;
+      }
+      if (data.verdict === undefined || data.fake_confidence === undefined) {
+        alert("Backend returned an incomplete response. Check that step3_app.py is running correctly.");
+        document.getElementById("analyzeBtn").disabled = false;
+        return;
+      }
+
+      showResult(data);
+    } catch(err) {
+      clearInterval(msgInterval);
+      document.getElementById("loadBar").classList.remove("show");
+      document.getElementById("loadText").classList.remove("show");
+      alert("Cannot connect to backend.\nMake sure step3_app.py is running on port 5000.");
+      document.getElementById("analyzeBtn").disabled = false;
+    }
+  }
+
+  function showResult(d) {
+    const card   = document.getElementById("resultCard");
+    const isFake = d.verdict === "FAKE";
+
+    card.classList.add("show", isFake ? "fake" : "real");
+
+    document.getElementById("verdictIcon").textContent = isFake ? "⚠️" : "✅";
+    document.getElementById("verdictText").textContent = isFake ? "AI Fake Detected" : "Real Human Voice";
+
+    const rb = document.getElementById("riskBadge");
+    rb.textContent = (d.risk_level || "LOW") + " RISK";
+    rb.className = "risk-badge risk-" + (d.risk_level || "LOW");
+
+    document.getElementById("fakeVal").textContent = d.fake_confidence + "%";
+    document.getElementById("realVal").textContent = d.real_confidence + "%";
+
+    setTimeout(() => {
+      document.getElementById("fakeBar").style.width = d.fake_confidence + "%";
+      document.getElementById("realBar").style.width = d.real_confidence + "%";
+    }, 80);
+
+    const topConf = Math.max(d.fake_confidence, d.real_confidence);
+    document.getElementById("mConf").textContent   = topConf + "%";
+    document.getElementById("mRisk").textContent   = d.risk_level || "LOW";
+    document.getElementById("mVerdict").textContent = isFake ? "FAKE" : "REAL";
+    document.getElementById("reasonText").textContent = d.reason || "—";
+
+    document.getElementById("analyzeBtn").disabled = false;
+    card.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+</script>
+</body>
+</html>

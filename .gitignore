@@ -1,0 +1,9 @@
+.venv/
+**/__pycache__/
+*.py[cod]
+tmp_upload*
+*_converted.wav
+**/data/real/*
+**/data/fake/*
+!**/data/real/.gitkeep
+!**/data/fake/.gitkeep
