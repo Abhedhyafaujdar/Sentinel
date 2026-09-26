@@ -652,6 +652,40 @@
     border-radius: 6px;
     background: #f8faf7;
   }
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 10px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #edf1ec;
+  }
+  .mode-tab {
+    min-width: 0;
+    min-height: 38px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .mode-tab.active {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(25, 50, 34, .12);
+  }
+  .experimental-note {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .record-row[hidden] { display: none; }
   .upload-zone:hover, .upload-zone.over, .upload-zone:focus-within {
     border-color: var(--accent);
     background: #f1f7f1;
@@ -870,9 +904,9 @@
 <main>
   <section class="hero" aria-labelledby="pageTitle">
     <div class="hero-copy">
-      <div class="hero-tag"><span class="pulse-dot" aria-hidden="true"></span>VOICE AUTHENTICITY / WORKSPACE</div>
-      <h1 id="pageTitle">Know who's really <em>speaking.</em></h1>
-      <p>Inspect a voice recording for signs of AI synthesis. Upload an audio file or record a short sample to begin.</p>
+      <div class="hero-tag"><span class="pulse-dot" aria-hidden="true"></span>MEDIA AUTHENTICITY / WORKSPACE</div>
+      <h1 id="pageTitle">Inspect what you hear, see, and read.</h1>
+      <p>Screen audio, images, video frames, and text for signals associated with AI-generated content.</p>
     </div>
     <div class="hero-signal" role="img" aria-label="Abstract voice waveform">
       <div class="signal-meta"><span>VOICE SIGNAL</span><span>SENTINEL / 01</span></div>
@@ -885,24 +919,31 @@
   <div class="workspace">
     <section class="main-card" aria-labelledby="analysisTitle">
       <div class="card-header">
-        <div><span class="card-kicker">NEW ANALYSIS</span><h2 class="card-title" id="analysisTitle">Analyze a recording</h2></div>
+        <div><span class="card-kicker">NEW ANALYSIS</span><h2 class="card-title" id="analysisTitle">Analyze media</h2></div>
         <span class="input-step">INPUT / 01</span>
       </div>
       <div class="card-body">
+        <div class="mode-tabs" role="group" aria-label="Choose analysis type">
+          <button class="mode-tab active" type="button" data-mode="audio" aria-pressed="true" onclick="setMode('audio')">Audio</button>
+          <button class="mode-tab" type="button" data-mode="image" aria-pressed="false" onclick="setMode('image')">Photo</button>
+          <button class="mode-tab" type="button" data-mode="video" aria-pressed="false" onclick="setMode('video')">Video</button>
+          <button class="mode-tab" type="button" data-mode="text" aria-pressed="false" onclick="setMode('text')">Text</button>
+        </div>
+        <p class="experimental-note">Screening scores are estimates, not proof. Short text and edited media can be misclassified.</p>
         <div class="upload-zone" id="uploadZone">
-          <input type="file" id="audioFile" accept="audio/*" aria-label="Choose an audio file" onchange="handleFile(this)">
+          <input type="file" id="audioFile" accept="audio/*" aria-label="Choose a file to analyze" onchange="handleFile(this)">
           <div class="upload-icon-wrap" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
           </div>
-          <h3>Select audio to analyze</h3>
-          <p>Drop a file here or choose one from your device</p>
+          <h3 id="uploadTitle">Select audio to analyze</h3>
+          <p id="uploadPrompt">Drop a file here or choose one from your device</p>
           <div class="file-chip" id="fileChip" style="display:none">
             <span aria-hidden="true">✓</span><span id="fileName"></span>
           </div>
-          <span class="format-note">WAV · MP3 · M4A · OGG</span>
+          <span class="format-note" id="formatNote">WAV · MP3 · M4A · OGG · FLAC · WEBM</span>
         </div>
 
-        <div class="record-row">
+        <div class="record-row" id="recordRow">
           <button class="btn btn-outline" id="recBtn" type="button" onclick="startRecord()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"/></svg>
             Record from microphone
@@ -917,7 +958,7 @@
 
         <button class="btn-analyze" id="analyzeBtn" type="button" onclick="analyze()" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.4-6.4-2.1 2.1M7.7 16.3l-2.1 2.1m12.8 0-2.1-2.1M7.7 7.7 5.6 5.6"/><circle cx="12" cy="12" r="4"/></svg>
-          Analyze voice
+          <span id="analyzeButtonText">Analyze voice</span>
         </button>
         <div class="loading-bar" id="loadBar" aria-hidden="true"><div class="loading-fill"></div></div>
         <div class="loading-text" id="loadText" role="status" aria-live="polite">Preparing audio analysis...</div>
@@ -926,16 +967,16 @@
     </section>
 
     <aside class="overview" aria-labelledby="overviewTitle">
-      <span class="side-kicker">AUDIO REVIEW</span>
-      <h2 id="overviewTitle">A clear view of the signal.</h2>
+      <span class="side-kicker">SCREENING REVIEW</span>
+      <h2 id="overviewTitle">Signals can guide a closer look.</h2>
       <ul class="overview-list">
-        <li><span class="overview-index">01</span> Pitch and timing patterns</li>
-        <li><span class="overview-index">02</span> Spectral texture</li>
-        <li><span class="overview-index">03</span> Energy consistency</li>
+        <li><span class="overview-index">01</span> Audio feature patterns</li>
+        <li><span class="overview-index">02</span> Sampled visual frames</li>
+        <li><span class="overview-index">03</span> English text patterns</li>
       </ul>
       <div class="privacy-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="M9 12h6"/></svg>
-        <div><strong>Local analysis</strong><p>Your recording is sent to this local app for analysis.</p></div>
+        <div><strong>Local processing</strong><p>Files are processed by this app. First use downloads the selected screening models.</p></div>
       </div>
     </aside>
   </div>
@@ -956,14 +997,14 @@
   <div class="result-body">
     <div class="conf-row">
       <div class="conf-label">
-        <span>AI / Fake probability</span>
+        <span id="aiScoreLabel">AI / Fake probability</span>
         <span class="conf-val" id="fakeVal">—</span>
       </div>
       <div class="bar-track"><div class="bar-fill bar-fake" id="fakeBar" style="width:0%"></div></div>
     </div>
     <div class="conf-row">
       <div class="conf-label">
-        <span>Human / Real probability</span>
+        <span id="humanScoreLabel">Human / Real probability</span>
         <span class="conf-val" id="realVal">—</span>
       </div>
       <div class="bar-track"><div class="bar-fill bar-real" id="realBar" style="width:0%"></div></div>
@@ -972,7 +1013,7 @@
     <div class="metrics">
       <div class="metric">
         <div class="metric-val" id="mConf">—</div>
-        <div class="metric-label">Confidence</div>
+        <div class="metric-label">Model score</div>
       </div>
       <div class="metric">
         <div class="metric-val" id="mRisk">—</div>
@@ -992,15 +1033,89 @@
 </div>
 
 <footer>
-  SentinelVoice <span aria-hidden="true">·</span> Voice authenticity analysis
+  SentinelVoice <span aria-hidden="true">·</span> Experimental media screening
 </footer>
 
 <script>
   let selectedFile = null;
+  let activeMode = "audio";
   let mediaRecorder = null;
   let recChunks = [];
   let timerInterval = null;
   let recSeconds = 0;
+
+  const modeSettings = {
+    audio: {
+      accept: ".wav,.mp3,.m4a,.ogg,.flac,.webm,.mp4",
+      title: "Select audio to analyze",
+      prompt: "Drop an audio file here or choose one from your device",
+      formats: "WAV · MP3 · M4A · OGG · FLAC · WEBM",
+      action: "Analyze voice",
+      loading: ["Preparing audio features...", "Reviewing spectral texture...", "Checking pitch variation..."]
+    },
+    image: {
+      accept: ".png,.jpg,.jpeg,.webp,.bmp",
+      title: "Select an image to screen",
+      prompt: "Choose a photo or image file",
+      formats: "PNG · JPG · WEBP · BMP",
+      action: "Screen image",
+      loading: ["Loading image model...", "Screening image patterns...", "Preparing estimate..."]
+    },
+    video: {
+      accept: ".mp4,.mov,.avi,.mkv,.webm,.m4v",
+      title: "Select a video to screen",
+      prompt: "Video frames from the first minute will be sampled",
+      formats: "MP4 · MOV · AVI · MKV · WEBM",
+      action: "Screen video frames",
+      loading: ["Preparing video frames...", "Screening sampled frames...", "Preparing estimate..."]
+    },
+    text: {
+      accept: ".txt,.md,.csv,.json,.html,.log,.xml,.yaml,.yml,.pdf,.docx",
+      title: "Select a text document",
+      prompt: "English text works best; minimum 60 words",
+      formats: "TXT · MD · CSV · JSON · PDF · DOCX",
+      action: "Screen text",
+      loading: ["Reading text document...", "Checking writing patterns...", "Preparing estimate..."]
+    }
+  };
+
+  function updateModeUI() {
+    const settings = modeSettings[activeMode];
+    document.getElementById("audioFile").accept = settings.accept;
+    document.getElementById("uploadTitle").textContent = settings.title;
+    document.getElementById("uploadPrompt").textContent = settings.prompt;
+    document.getElementById("formatNote").textContent = settings.formats;
+    document.getElementById("analyzeButtonText").textContent = settings.action;
+    document.getElementById("recordRow").style.display = activeMode === "audio" ? "flex" : "none";
+    document.querySelectorAll(".mode-tab").forEach(button => {
+      const active = button.dataset.mode === activeMode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  function setMode(mode) {
+    if (!modeSettings[mode]) return;
+    activeMode = mode;
+    selectedFile = null;
+    document.getElementById("audioFile").value = "";
+    document.getElementById("fileChip").style.display = "none";
+    document.getElementById("analyzeBtn").disabled = true;
+    document.getElementById("analysisNotice").hidden = true;
+    document.getElementById("resultCard").classList.remove("show", "fake", "real");
+    updateModeUI();
+  }
+
+  function modeForFile(file) {
+    if (file.type.startsWith("audio/")) return "audio";
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type.startsWith("video/")) return "video";
+    const extension = file.name.split(".").pop().toLowerCase();
+    if (["png", "jpg", "jpeg", "webp", "bmp"].includes(extension)) return "image";
+    if (["mp4", "mov", "avi", "mkv", "webm", "m4v"].includes(extension)) return "video";
+    if (["txt", "md", "csv", "json", "html", "log", "xml", "yaml", "yml", "pdf", "docx"].includes(extension)) return "text";
+    return activeMode;
+  }
 
   // ── Drag & drop ──
   const zone = document.getElementById("uploadZone");
@@ -1009,14 +1124,16 @@
   zone.addEventListener("drop", e => {
     e.preventDefault(); zone.classList.remove("over");
     const f = e.dataTransfer.files[0];
-    if (f) setFile(f);
+    if (f) setFile(f, modeForFile(f));
   });
 
   function handleFile(input) {
-    if (input.files[0]) setFile(input.files[0]);
+    if (input.files[0]) setFile(input.files[0], modeForFile(input.files[0]));
   }
 
-  function setFile(f) {
+  function setFile(f, mode = activeMode) {
+    if (modeSettings[mode]) activeMode = mode;
+    updateModeUI();
     selectedFile = f;
     document.getElementById("fileName").textContent = f.name;
     document.getElementById("fileChip").style.display = "inline-flex";
@@ -1024,6 +1141,8 @@
     document.getElementById("analysisNotice").hidden = true;
     document.getElementById("resultCard").classList.remove("show", "fake", "real");
   }
+
+  updateModeUI();
 
   function setNotice(message) {
     const notice = document.getElementById("analysisNotice");
@@ -1076,11 +1195,11 @@
           const wavBlob  = audioBufferToWav(decoded);
           const wavFile  = new File([wavBlob], "recording.wav", { type: "audio/wav" });
           audioCtx.close();
-          setFile(wavFile);
+          setFile(wavFile, "audio");
         } catch (e) {
           console.warn("WAV conversion failed, sending webm:", e);
           const f = new File(recChunks, "recording.webm", { type: "audio/webm" });
-          setFile(f);
+          setFile(f, "audio");
         }
       };
 
@@ -1139,13 +1258,7 @@
     document.getElementById("loadText").classList.add("show");
 
     document.getElementById("analysisNotice").hidden = true;
-    const msgs = [
-      "Preparing audio features...",
-      "Reviewing spectral texture...",
-      "Checking pitch variation...",
-      "Scoring voice patterns...",
-      "Preparing your report..."
-    ];
+    const msgs = modeSettings[activeMode].loading;
     let mi = 0;
     const msgInterval = setInterval(() => {
       mi = (mi + 1) % msgs.length;
@@ -1153,10 +1266,11 @@
     }, 900);
 
     const form = new FormData();
-    form.append("audio", selectedFile);
+    form.append("file", selectedFile);
+    form.append("mode", activeMode);
 
     try {
-      const res  = await fetch("/predict", { method:"POST", body:form });
+      const res  = await fetch("/analyze", { method:"POST", body:form });
       const data = await res.json();
 
       clearInterval(msgInterval);
@@ -1167,7 +1281,7 @@
         setNotice(data.error || "The audio could not be analyzed. Try another recording.");
         return;
       }
-      if (data.verdict === undefined || data.fake_confidence === undefined) {
+      if (data.verdict === undefined || data.fake_confidence === undefined || data.real_confidence === undefined) {
         setNotice("The analysis service returned an incomplete result. Please try again.");
         return;
       }
@@ -1190,7 +1304,15 @@
     card.classList.add("show", isFake ? "fake" : "real");
 
     document.getElementById("verdictIcon").textContent = isFake ? "⚠️" : "✅";
-    document.getElementById("verdictText").textContent = isFake ? "AI Fake Detected" : "Real Human Voice";
+    document.getElementById("verdictText").textContent = d.verdict_label || (isFake ? "AI signal detected" : "Human signal detected");
+    const scoreLabels = {
+      audio: ["AI-generated voice score", "Human voice score"],
+      image: ["AI-generated image score", "Human-created image score"],
+      video: ["AI-like frame score", "Human-created frame score"],
+      text: ["AI-writing score", "Human-writing score"]
+    }[d.modality] || ["AI / synthetic score", "Human / original score"];
+    document.getElementById("aiScoreLabel").textContent = scoreLabels[0];
+    document.getElementById("humanScoreLabel").textContent = scoreLabels[1];
 
     const rb = document.getElementById("riskBadge");
     rb.textContent = (d.risk_level || "LOW") + " RISK";
@@ -1208,7 +1330,7 @@
     document.getElementById("mConf").textContent   = topConf + "%";
     document.getElementById("mRisk").textContent   = d.risk_level || "LOW";
     document.getElementById("mVerdict").textContent = isFake ? "FAKE" : "REAL";
-    document.getElementById("reasonText").textContent = d.reason || "—";
+    document.getElementById("reasonText").textContent = (d.reason || "—") + (d.experimental ? " This model score is an estimate, not proof." : "");
 
     document.getElementById("analyzeBtn").disabled = false;
     card.scrollIntoView({ behavior:"smooth", block:"start" });

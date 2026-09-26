@@ -4,8 +4,8 @@
 ---
 
 ## What this project does
-Detects whether an audio clip is a real human voice
-or an AI-generated/cloned voice — in real time.
+Screens audio, images, sampled video frames, and text documents for signals
+associated with AI-generated content.
 
 It extracts audio features (MFCC, pitch, jitter) and
 runs them through a trained ML model to give a verdict
@@ -49,10 +49,29 @@ Open index.html in your browser (double-click it).
 ---
 
 ## How to use the app
-1. Click the upload zone and pick any WAV/MP3 audio file
-   OR click "Record Live" to record from your microphone
-2. Click "Analyze Audio"
-3. See the verdict: REAL or FAKE, with confidence % and reason
+1. Choose Audio, Photo, Video, or Text.
+2. Select a supported file, or record audio in Audio mode.
+3. Review the experimental screening score and its limitations.
+
+Supported media: WAV, MP3, M4A, OGG, FLAC, WEBM; PNG, JPG, WEBP, BMP;
+MP4, MOV, AVI, MKV, WEBM; TXT, MD, CSV, JSON, HTML, LOG, XML, YAML, PDF,
+and DOCX. Uploads are limited to 100 MB.
+
+Image and text model weights download from Hugging Face on first use, so an
+internet connection is needed the first time each model is selected. Video
+screening extracts at most eight frames from the first minute and runs the
+image model on those frames; it does not check audio/video lip-sync or prove
+that a face is authentic.
+
+## Detection limitations
+- Scores are estimates, not proof, and no mode is 100% accurate.
+- Image screening uses `Organika/sdxl-detector`, which is limited to SDXL-like
+    generated images and is licensed CC BY-NC 3.0 (non-commercial use only).
+- Text screening uses `Hello-SimpleAI/chatgpt-detector-roberta`, trained on
+    English ChatGPT-era text. Hindi, edited text, short samples, and newer models
+    may be misclassified. At least 60 words are required.
+- The audio model was trained on a very small number of real recordings plus
+    synthetic feature samples; its confidence is not calibrated for general use.
 
 ---
 

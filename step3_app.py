@@ -8,12 +8,15 @@ import socket
 import shutil
 import warnings
 import subprocess
+import tempfile
 import soundfile as sf
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from multimodal_detection import analyze_image, analyze_text, analyze_video
 
 app = Flask(__name__)
 CORS(app)
+app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
 
 if not os.path.exists("model/detector.pkl"):
     print("ERROR: Run step2_train_model.py first!")
@@ -214,11 +217,16 @@ def predict():
     if not f.filename:
         return jsonify({"error": "Empty filename"}), 400
 
-    # Save with original extension so we know the format
-    ext = os.path.splitext(f.filename)[1].lower() or ".wav"
-    tmp = f"tmp_upload{ext}"
-    f.save(tmp)
-    print(f"[UPLOAD] {f.filename} ({ext}) saved as {tmp}")
+    return analyze_audio_upload(f)
+
+
+def analyze_audio_upload(upload):
+    ext = os.path.splitext(upload.filename)[1].lower() or ".wav"
+    handle = tempfile.NamedTemporaryFile(prefix="tmp_upload_", suffix=ext, delete=False)
+    tmp = handle.name
+    handle.close()
+    upload.save(tmp)
+    print(f"[UPLOAD] {upload.filename} ({ext}) saved for analysis")
 
     try:
         feats   = extract_deep_features(tmp)
@@ -232,25 +240,80 @@ def predict():
         risk      = "HIGH" if fake_conf > 75 else "MEDIUM" if fake_conf > 50 else "LOW"
         reason    = build_reason(verdict, fake_conf, feats)
 
-        if os.path.exists(tmp):
-            os.remove(tmp)
-
         result = {
             "verdict":         verdict,
+            "verdict_label":   "AI-generated voice" if verdict == "FAKE" else "Human voice",
             "fake_confidence": fake_conf,
             "real_confidence": real_conf,
             "reason":          reason,
-            "risk_level":      risk
+            "risk_level":      risk,
+            "modality":        "audio",
+            "experimental":    True,
         }
         print(f"[RESULT] {verdict} | Fake:{fake_conf}% Real:{real_conf}% Risk:{risk}")
         return jsonify(result)
 
     except Exception as e:
-        if os.path.exists(tmp):
-            os.remove(tmp)
         print(f"[ERROR] {e}")
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+@app.route("/analyze", methods=["POST"])
+def analyze_media():
+    if "file" not in request.files:
+        return jsonify({"error": "Choose a file to analyze."}), 400
+    upload = request.files["file"]
+    if not upload.filename:
+        return jsonify({"error": "The uploaded file has no filename."}), 400
+
+    mode = request.form.get("mode", "").lower()
+    extension = os.path.splitext(upload.filename)[1].lower()
+    allowed = {
+        "audio": {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm", ".mp4"},
+        "image": {".png", ".jpg", ".jpeg", ".webp", ".bmp"},
+        "video": {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"},
+        "text": {".txt", ".md", ".csv", ".json", ".html", ".log", ".xml", ".yaml", ".yml", ".pdf", ".docx"},
+    }
+    if mode not in allowed:
+        return jsonify({"error": "Choose audio, image, video, or text mode."}), 400
+    if extension not in allowed[mode]:
+        return jsonify({"error": f"{extension or 'This file'} is not supported in {mode} mode."}), 415
+    if mode == "audio":
+        return analyze_audio_upload(upload)
+
+    handle = tempfile.NamedTemporaryFile(prefix="tmp_upload_", suffix=extension, delete=False)
+    tmp = handle.name
+    handle.close()
+    upload.save(tmp)
+    try:
+        if mode == "image":
+            result = analyze_image(tmp)
+        elif mode == "video":
+            result = analyze_video(tmp)
+        else:
+            result = analyze_text(tmp)
+        return jsonify(result)
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except ImportError as error:
+        return jsonify({"error": f"Required file reader is missing: {error}. Install dependencies from requirements.txt."}), 503
+    except RuntimeError as error:
+        return jsonify({"error": str(error)}), 503
+    except Exception as error:
+        print(f"[ERROR] {error}")
+        return jsonify({"error": "The file could not be analyzed. Check its format and try another file."}), 500
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+@app.errorhandler(413)
+def upload_too_large(_error):
+    return jsonify({"error": "Files must be smaller than 100 MB."}), 413
 
 
 @app.route("/health")
