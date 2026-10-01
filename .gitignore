@@ -1,5 +1,6 @@
 .venv/
 .vscode/settings.json
+Sentinel.code-workspace
 **/__pycache__/
 *.py[cod]
 tmp_upload*

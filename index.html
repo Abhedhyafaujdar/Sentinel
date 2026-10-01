@@ -654,7 +654,7 @@
   }
   .mode-tabs {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
     margin-bottom: 10px;
     padding: 4px;
@@ -905,8 +905,8 @@
   <section class="hero" aria-labelledby="pageTitle">
     <div class="hero-copy">
       <div class="hero-tag"><span class="pulse-dot" aria-hidden="true"></span>MEDIA AUTHENTICITY / WORKSPACE</div>
-      <h1 id="pageTitle">Inspect what you hear, see, and read.</h1>
-      <p>Screen audio, images, video frames, and text for signals associated with AI-generated content.</p>
+      <h1 id="pageTitle">Inspect what you hear and see.</h1>
+      <p>Screen audio, images, and video frames for signals associated with AI-generated content.</p>
     </div>
     <div class="hero-signal" role="img" aria-label="Abstract voice waveform">
       <div class="signal-meta"><span>VOICE SIGNAL</span><span>SENTINEL / 01</span></div>
@@ -927,9 +927,8 @@
           <button class="mode-tab active" type="button" data-mode="audio" aria-pressed="true" onclick="setMode('audio')">Audio</button>
           <button class="mode-tab" type="button" data-mode="image" aria-pressed="false" onclick="setMode('image')">Photo</button>
           <button class="mode-tab" type="button" data-mode="video" aria-pressed="false" onclick="setMode('video')">Video</button>
-          <button class="mode-tab" type="button" data-mode="text" aria-pressed="false" onclick="setMode('text')">Text</button>
         </div>
-        <p class="experimental-note">Screening scores are estimates, not proof. Short text and edited media can be misclassified.</p>
+        <p class="experimental-note">Screening scores are estimates, not proof. Edited media can be misclassified.</p>
         <div class="upload-zone" id="uploadZone">
           <input type="file" id="audioFile" accept="audio/*" aria-label="Choose a file to analyze" onchange="handleFile(this)">
           <div class="upload-icon-wrap" aria-hidden="true">
@@ -972,7 +971,6 @@
       <ul class="overview-list">
         <li><span class="overview-index">01</span> Audio feature patterns</li>
         <li><span class="overview-index">02</span> Sampled visual frames</li>
-        <li><span class="overview-index">03</span> English text patterns</li>
       </ul>
       <div class="privacy-note">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="M9 12h6"/></svg>
@@ -1068,14 +1066,6 @@
       formats: "MP4 · MOV · AVI · MKV · WEBM",
       action: "Screen video frames",
       loading: ["Preparing video frames...", "Screening sampled frames...", "Preparing estimate..."]
-    },
-    text: {
-      accept: ".txt,.md,.csv,.json,.html,.log,.xml,.yaml,.yml,.pdf,.docx",
-      title: "Select a text document",
-      prompt: "English text works best; minimum 60 words",
-      formats: "TXT · MD · CSV · JSON · PDF · DOCX",
-      action: "Screen text",
-      loading: ["Reading text document...", "Checking writing patterns...", "Preparing estimate..."]
     }
   };
 
@@ -1113,7 +1103,6 @@
     const extension = file.name.split(".").pop().toLowerCase();
     if (["png", "jpg", "jpeg", "webp", "bmp"].includes(extension)) return "image";
     if (["mp4", "mov", "avi", "mkv", "webm", "m4v"].includes(extension)) return "video";
-    if (["txt", "md", "csv", "json", "html", "log", "xml", "yaml", "yml", "pdf", "docx"].includes(extension)) return "text";
     return activeMode;
   }
 
@@ -1308,8 +1297,7 @@
     const scoreLabels = {
       audio: ["AI-generated voice score", "Human voice score"],
       image: ["AI-generated image score", "Human-created image score"],
-      video: ["AI-like frame score", "Human-created frame score"],
-      text: ["AI-writing score", "Human-writing score"]
+      video: ["AI-like frame score", "Human-created frame score"]
     }[d.modality] || ["AI / synthetic score", "Human / original score"];
     document.getElementById("aiScoreLabel").textContent = scoreLabels[0];
     document.getElementById("humanScoreLabel").textContent = scoreLabels[1];
