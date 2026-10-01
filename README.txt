@@ -93,15 +93,6 @@ that a face is authentic.
 
 ---
 
-## For the hackathon demo — do this for maximum impact
-
-1. Download a real voice sample (record yourself saying something)
-2. Generate a fake voice using any free TTS tool
-   (ElevenLabs free tier, Murf.ai, or Google TTS)
-3. Run both through the app live on stage
-4. Show the REAL getting green + FAKE getting red in real time
-
-That 10-second live demo will win the audience over instantly.
 
 ---
 
@@ -113,8 +104,3 @@ That 10-second live demo will win the audience over instantly.
 
 ---
 
-## Upgrading for production (post-hackathon)
-- Replace synthetic data with ASVspoof 2021 dataset
-- Swap Random Forest for a CNN on mel-spectrograms
-- Add real-time mic streaming (WebRTC chunks every 2 seconds)
-- Add Indian language fine-tuning (Hindi, Tamil, Telugu)
